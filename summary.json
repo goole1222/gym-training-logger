@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-03-09T00:27:00",
+  "total_records": 6,
+  "unique_exercises": 5,
+  "exercises": [
+    {
+      "exercise": "1/4 Squat",
+      "sessions": 1,
+      "max_weight": 160.0,
+      "avg_weight": 160.0,
+      "total_volume": 1440.0,
+      "last_date": "2026-03-08"
+    },
+    {
+      "exercise": "1/8 sq",
+      "sessions": 1,
+      "max_weight": 260.0,
+      "avg_weight": 260.0,
+      "total_volume": 1560.0,
+      "last_date": "2026-03-08"
+    },
+    {
+      "exercise": "bench press",
+      "sessions": 2,
+      "max_weight": 60.0,
+      "avg_weight": 55.0,
+      "total_volume": 2690.0,
+      "last_date": "2026-03-08"
+    },
+    {
+      "exercise": "RDL",
+      "sessions": 1,
+      "max_weight": 110.0,
+      "avg_weight": 110.0,
+      "total_volume": 990.0,
+      "last_date": "2026-03-08"
+    },
+    {
+      "exercise": "Squat",
+      "sessions": 1,
+      "max_weight": 120.0,
+      "avg_weight": 120.0,
+      "total_volume": 1080.0,
+      "last_date": "2026-03-08"
+    }
+  ]
+}
