@@ -26,6 +26,7 @@ from typing import Optional
 
 import storage
 import suggest
+import database
 
 # ---------------------------------------------------------------------------
 # Auto-save safety net
@@ -604,6 +605,18 @@ def action_add_from_template(data: dict, data_file: str) -> None:
 
     # 把所有新紀錄加入 data["records"]
     data["records"].extend(added)
+
+    # 同步寫入 SQLite（JSON 流程保持不變）
+    database.init_db()
+    for rec in added:
+        database.add_workout(
+            date=rec["date"],
+            exercise=rec["exercise"],
+            weight=rec["weight"],
+            sets=rec["sets"],
+            reps=rec["reps"],
+            notes=rec.get("note", ""),
+        )
 
     # 顯示完成訊息，提醒使用者還要選 0 才會存檔
     print("\n" + _hr())
