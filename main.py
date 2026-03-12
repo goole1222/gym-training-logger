@@ -275,7 +275,7 @@ def action_suggestions(data: dict, data_file: str) -> None:
     print("\n" + _hr())
     print("  PROGRESSIVE OVERLOAD SUGGESTIONS")
     print(_hr())
-    suggestions = suggest.generate_suggestions(data["records"])
+    suggestions = suggest.generate_suggestions(database.get_all_workouts())  # 從 SQLite 讀
     suggest.print_suggestions(suggestions)
     print(_hr())
 
@@ -536,7 +536,7 @@ def action_add_from_template(data: dict, data_file: str) -> None:
     session_id = str(uuid.uuid4())
 
     # 事先算好每個動作的建議重量，建成 {動作名稱小寫: 建議dict} 查詢表
-    sugg_map = {s["exercise"].lower(): s for s in suggest.generate_suggestions(data["records"])}
+    sugg_map = {s["exercise"].lower(): s for s in suggest.generate_suggestions(database.get_all_workouts())}  # 從 SQLite 讀
 
     # 逐一處理模板裡的每個動作
     for item in chosen["items"]:
