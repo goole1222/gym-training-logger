@@ -126,6 +126,50 @@ def get_all_workouts(db_path: str = DEFAULT_DB_FILE) -> list[dict]:
     return rows
 
 
+def get_recent_workouts(limit: int = 10, db_path: str = DEFAULT_DB_FILE) -> list[dict]:
+    """
+    回傳最近 N 筆訓練紀錄，按日期由新到舊排序。
+    limit 預設 10，可以傳入其他數字，例如 get_recent_workouts(5)。
+    適合用在「查看最近訓練」的選單。
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # LIMIT ? 讓 SQL 只回傳前 N 筆，不用把全部資料撈出來再切
+    cursor.execute("""
+        SELECT id, date, exercise, weight, sets, reps, notes
+        FROM workouts
+        ORDER BY date DESC, id DESC
+        LIMIT ?
+    """, (limit,))
+
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_workouts_by_exercise(exercise: str, db_path: str = DEFAULT_DB_FILE) -> list[dict]:
+    """
+    回傳某個動作的所有歷史紀錄，按日期由舊到新排序。
+    搜尋不分大小寫（COLLATE NOCASE），所以 "bench press" 和 "Bench Press" 都能找到。
+    適合用在「建議重量」和「趨勢圖」功能。
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # COLLATE NOCASE 讓比對忽略大小寫，不用在 Python 側手動 .lower()
+    cursor.execute("""
+        SELECT id, date, exercise, weight, sets, reps, notes
+        FROM workouts
+        WHERE exercise = ? COLLATE NOCASE
+        ORDER BY date ASC, id ASC
+    """, (exercise,))
+
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # 刪除
 # ---------------------------------------------------------------------------
