@@ -151,12 +151,10 @@ def _print_record_table(records: list[dict], numbered: bool = False) -> None:
 
 def action_show_last(data: dict, data_file: str) -> None:
     """Display all records (newest first), then optionally edit or delete one."""
-    records = data["records"]
-    if not records:
+    recent = database.get_all_workouts()  # 從 SQLite 讀，已按日期新→舊排序
+    if not recent:
         print("\n  No records yet. Add your first session!")
         return
-
-    recent = list(reversed(records))  # newest first — same dict refs, safe to edit in place
 
     print("\n" + _hr())
     print(f"  ALL {len(recent)} RECORDS  (newest first)")
@@ -204,7 +202,7 @@ def action_show_last(data: dict, data_file: str) -> None:
         print("  [!] Please enter a number.")
         return
 
-    rec = recent[idx - 1]   # live reference into data["records"]
+    rec = recent[idx - 1]   # dict from SQLite — id is an integer
 
     action = input("  (e) Edit   (d) Delete   (0) Cancel: ").strip().lower()
 
@@ -234,6 +232,13 @@ def action_show_last(data: dict, data_file: str) -> None:
         note_raw = _ask("Note (Enter to keep current)", default=rec["note"])
         if note_raw:
             rec["note"] = note_raw
+        # 把改好的資料寫回 SQLite
+        database.update_workout(
+            rec["id"],
+            date=rec["date"], exercise=rec["exercise"],
+            sets=rec["sets"], reps=rec["reps"],
+            weight=rec["weight"], notes=rec["note"],
+        )
         print(f"\n  ✔ Updated: {rec['exercise']} — {rec['sets']}×{rec['reps']} @ {rec['weight']} kg on {rec['date']}")
 
     elif action == "d":
@@ -241,7 +246,7 @@ def action_show_last(data: dict, data_file: str) -> None:
         if rec["note"]:
             print(f"  Note: {rec['note']}")
         if input("\n  Are you sure? (y/n): ").strip().lower() == "y":
-            data["records"] = [r for r in data["records"] if r["id"] != rec["id"]]
+            database.delete_workout(rec["id"])  # 從 SQLite 刪除
             print("  ✔ Record deleted.")
         else:
             print("  Cancelled.")
@@ -249,7 +254,7 @@ def action_show_last(data: dict, data_file: str) -> None:
 
 def action_search(data: dict, data_file: str) -> None:
     """Search records by exercise keyword (case-insensitive)."""
-    records = data["records"]
+    records = database.get_all_workouts()  # 從 SQLite 讀
     if not records:
         print("\n  No records yet.")
         return
@@ -347,7 +352,7 @@ def action_show_chart(data: dict, data_file: str) -> None:
       4. 呼叫 _draw_ascii_chart() 畫圖
       5. 顯示最小/最大/筆數摘要
     """
-    records = data["records"]
+    records = database.get_all_workouts()  # 從 SQLite 讀
 
     if not records:
         print("\n  No records yet. Add some sessions first!")

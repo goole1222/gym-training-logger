@@ -115,7 +115,7 @@ def get_all_workouts(db_path: str = DEFAULT_DB_FILE) -> list[dict]:
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, date, exercise, weight, sets, reps, notes
+        SELECT id, date, exercise, weight, sets, reps, notes AS note
         FROM workouts
         ORDER BY date DESC, id DESC
     """)
@@ -137,7 +137,7 @@ def get_recent_workouts(limit: int = 10, db_path: str = DEFAULT_DB_FILE) -> list
 
     # LIMIT ? 讓 SQL 只回傳前 N 筆，不用把全部資料撈出來再切
     cursor.execute("""
-        SELECT id, date, exercise, weight, sets, reps, notes
+        SELECT id, date, exercise, weight, sets, reps, notes AS note
         FROM workouts
         ORDER BY date DESC, id DESC
         LIMIT ?
@@ -159,7 +159,7 @@ def get_workouts_by_exercise(exercise: str, db_path: str = DEFAULT_DB_FILE) -> l
 
     # COLLATE NOCASE 讓比對忽略大小寫，不用在 Python 側手動 .lower()
     cursor.execute("""
-        SELECT id, date, exercise, weight, sets, reps, notes
+        SELECT id, date, exercise, weight, sets, reps, notes AS note
         FROM workouts
         WHERE exercise = ? COLLATE NOCASE
         ORDER BY date ASC, id ASC
