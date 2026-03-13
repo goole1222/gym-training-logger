@@ -170,6 +170,91 @@ def get_workouts_by_exercise(exercise: str, db_path: str = DEFAULT_DB_FILE) -> l
     return rows
 
 
+def get_total_volume_by_exercise(db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
+    """
+    計算每個動作的總訓練量（volume），按 volume 由大到小排序。
+
+    volume 公式：weight × reps × sets
+    例如：120 kg × 3 reps × 3 sets = 1080
+
+    回傳格式：
+      [("Squat", 12000.0), ("Bench Press", 8000.0), ...]
+      每個元素是 (動作名稱, 總volume) 的 tuple
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # SUM(weight * reps * sets) 直接在 SQL 裡計算，比在 Python 迴圈裡算更有效率
+    # GROUP BY exercise 表示「每個動作分開算」
+    # ORDER BY total_volume DESC 表示「volume 最大的排第一」
+    cursor.execute("""
+        SELECT exercise, SUM(weight * reps * sets) AS total_volume
+        FROM workouts
+        GROUP BY exercise
+        ORDER BY total_volume DESC
+    """)
+
+    # 回傳 list of tuple：[("Squat", 12000.0), ...]
+    rows = [(row["exercise"], row["total_volume"]) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_pr_by_exercise(db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
+    """
+    找出每個動作的 PR（Personal Record）= 該動作出現過的最大重量。
+    按 PR 重量由大到小排序。
+
+    回傳格式：
+      [("Squat", 180.0), ("Bench Press", 120.0), ...]
+      每個元素是 (動作名稱, 最大重量) 的 tuple
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # MAX(weight) 取每個動作的最大值
+    # GROUP BY exercise 讓每個動作分開計算
+    # ORDER BY pr DESC 最重的排第一
+    cursor.execute("""
+        SELECT exercise, MAX(weight) AS pr
+        FROM workouts
+        GROUP BY exercise
+        ORDER BY pr DESC
+    """)
+
+    # 回傳 list of tuple：[("Squat", 180.0), ...]
+    rows = [(row["exercise"], row["pr"]) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_training_frequency(db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
+    """
+    計算每個動作出現的次數（有幾筆紀錄），按次數由多到少排序。
+
+    回傳格式：
+      [("Squat", 8), ("Bench Press", 5), ...]
+      每個元素是 (動作名稱, 出現次數) 的 tuple
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # COUNT(*) 計算每組有幾筆資料
+    # GROUP BY exercise 讓每個動作分開計算
+    # ORDER BY frequency DESC 次數最多的排第一
+    cursor.execute("""
+        SELECT exercise, COUNT(*) AS frequency
+        FROM workouts
+        GROUP BY exercise
+        ORDER BY frequency DESC
+    """)
+
+    # 回傳 list of tuple：[("Squat", 8), ...]
+    rows = [(row["exercise"], row["frequency"]) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # 刪除
 # ---------------------------------------------------------------------------

@@ -68,6 +68,9 @@ MENU = """
   3) Search records (by exercise)
   4) Generate suggestions
   5) Show chart
+  6) Volume analysis
+  7) PR analysis
+  8) Training frequency
   9) Manage templates
   0) Save & Exit
 """
@@ -272,6 +275,78 @@ def action_search(data: dict, data_file: str) -> None:
     print(f"\n  Found {len(matches)} record(s) matching '{keyword}':")
     print(_hr())
     _print_record_table(matches)
+    print(_hr())
+
+
+def action_volume(data: dict, data_file: str) -> None:
+    """顯示每個動作的總訓練量（volume = weight × reps × sets），由大到小排序。"""
+    rows = database.get_total_volume_by_exercise()
+
+    print("\n" + _hr())
+    print("  VOLUME ANALYSIS  (weight × reps × sets)")
+    print(_hr())
+
+    if not rows:
+        print("  No records yet.")
+        print(_hr())
+        return
+
+    # 找最大 volume，用來畫比例長條
+    max_vol = rows[0][1]
+
+    print(f"  {'EXERCISE':<25} {'TOTAL VOLUME (kg)':>18}  BAR")
+    print("  " + "-" * 60)
+
+    for exercise, total_vol in rows:
+        # 長條圖最長 20 格，按比例縮放
+        bar_len = int((total_vol / max_vol) * 20)
+        bar = "█" * bar_len
+        print(f"  {exercise:<25} {total_vol:>16,.1f}  {bar}")
+
+    print(_hr())
+
+
+def action_pr(data: dict, data_file: str) -> None:
+    """顯示每個動作的 PR（Personal Record = 最大重量），由重到輕排序。"""
+    rows = database.get_pr_by_exercise()
+
+    print("\n" + _hr())
+    print("  PERSONAL RECORDS  (max weight per exercise)")
+    print(_hr())
+
+    if not rows:
+        print("  No records yet.")
+        print(_hr())
+        return
+
+    print(f"  {'EXERCISE':<25} {'PR (kg)':>10}")
+    print("  " + "-" * 38)
+
+    for exercise, pr in rows:
+        print(f"  {exercise:<25} {pr:>10.2f}")
+
+    print(_hr())
+
+
+def action_frequency(data: dict, data_file: str) -> None:
+    """顯示每個動作的訓練次數（共有幾筆紀錄），由多到少排序。"""
+    rows = database.get_training_frequency()
+
+    print("\n" + _hr())
+    print("  TRAINING FREQUENCY  (sessions per exercise)")
+    print(_hr())
+
+    if not rows:
+        print("  No records yet.")
+        print(_hr())
+        return
+
+    print(f"  {'EXERCISE':<25} {'COUNT':>8}")
+    print("  " + "-" * 36)
+
+    for exercise, freq in rows:
+        print(f"  {exercise:<25} {freq:>8}")
+
     print(_hr())
 
 
@@ -921,6 +996,9 @@ ACTIONS: dict[str, callable] = {
     "3": action_search,
     "4": action_suggestions,
     "5": action_show_chart,
+    "6": action_volume,
+    "7": action_pr,
+    "8": action_frequency,
     "9": action_manage_templates,
     "0": action_save_exit,
 }
