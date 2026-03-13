@@ -255,6 +255,35 @@ def get_training_frequency(db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
     return rows
 
 
+def get_weekly_training_days(db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
+    """
+    統計每週訓練了幾天，按週次由新到舊排序。
+
+    回傳格式：
+      [("2026-W12", 3), ("2026-W11", 4), ...]
+      每個元素是 (週次字串, 訓練天數) 的 tuple
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # strftime('%Y-%W', date) 把日期轉成 "年-週次"，例如 "2026-12"
+    # COUNT(DISTINCT date) 數這週有幾個不同的訓練日（同一天多筆只算一天）
+    # GROUP BY week 每週分開統計
+    # ORDER BY week DESC 最新的週次排第一
+    cursor.execute("""
+        SELECT strftime('%Y-W%W', date) AS week,
+               COUNT(DISTINCT date)     AS training_days
+        FROM workouts
+        GROUP BY week
+        ORDER BY week DESC
+    """)
+
+    # 回傳 list of tuple：[("2026-W12", 3), ...]
+    rows = [(row["week"], row["training_days"]) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # 刪除
 # ---------------------------------------------------------------------------

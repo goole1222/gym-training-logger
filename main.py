@@ -71,6 +71,7 @@ MENU = """
   6) Volume analysis
   7) PR analysis
   8) Training frequency
+  w) Weekly training days
   9) Manage templates
   0) Save & Exit
 """
@@ -346,6 +347,30 @@ def action_frequency(data: dict, data_file: str) -> None:
 
     for exercise, freq in rows:
         print(f"  {exercise:<25} {freq:>8}")
+
+    print(_hr())
+
+
+def action_weekly(data: dict, data_file: str) -> None:
+    """顯示每週訓練了幾天，由最近的週次往前排。"""
+    rows = database.get_weekly_training_days()
+
+    print("\n" + _hr())
+    print("  WEEKLY TRAINING DAYS")
+    print(_hr())
+
+    if not rows:
+        print("  No records yet.")
+        print(_hr())
+        return
+
+    print(f"  {'WEEK':<12} {'TRAINING DAYS':>14}")
+    print("  " + "-" * 28)
+
+    for week, days in rows:
+        # 用 █ 畫出簡單的長條，最多 7 格（一週最多 7 天）
+        bar = "█" * days
+        print(f"  {week:<12} {days:>5}  {bar}")
 
     print(_hr())
 
@@ -999,6 +1024,7 @@ ACTIONS: dict[str, callable] = {
     "6": action_volume,
     "7": action_pr,
     "8": action_frequency,
+    "w": action_weekly,
     "9": action_manage_templates,
     "0": action_save_exit,
 }
