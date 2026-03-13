@@ -284,6 +284,35 @@ def get_weekly_training_days(db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
     return rows
 
 
+def get_exercise_progress(exercise: str, db_path: str = DEFAULT_DB_FILE) -> list[tuple]:
+    """
+    回傳某個動作隨時間的重量變化，按日期由舊到新排序。
+    同一天有多筆時，取當天最大重量（代表當天最佳表現）。
+
+    回傳格式：
+      [("2026-03-01", 100.0), ("2026-03-05", 105.0), ...]
+      每個元素是 (日期字串, 重量) 的 tuple
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # MAX(weight) 取同一天的最大重量，避免同天多筆造成重複顯示
+    # WHERE exercise = ? COLLATE NOCASE 不分大小寫搜尋
+    # GROUP BY date 每天只保留一筆（最大重量）
+    # ORDER BY date 由舊到新，才能看出進步趨勢
+    cursor.execute("""
+        SELECT date, MAX(weight) AS weight
+        FROM workouts
+        WHERE exercise = ? COLLATE NOCASE
+        GROUP BY date
+        ORDER BY date
+    """, (exercise,))
+
+    rows = [(row["date"], row["weight"]) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # 刪除
 # ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ Menu:
   2) Show last records (edit/delete inline)
   3) Search records
   4) Generate suggestions
-  5) Show chart
+  5) Analytics (submenu)
   9) Manage templates
   0) Save & Exit
 """
@@ -67,11 +67,7 @@ MENU = """
   2) Show last records
   3) Search records (by exercise)
   4) Generate suggestions
-  5) Show chart
-  6) Volume analysis
-  7) PR analysis
-  8) Training frequency
-  w) Weekly training days
+  5) Analytics
   9) Manage templates
   0) Save & Exit
 """
@@ -375,6 +371,79 @@ def action_weekly(data: dict, data_file: str) -> None:
     print(_hr())
 
 
+def action_exercise_detail(data: dict, data_file: str) -> None:
+    """讓使用者選一個動作，顯示重量進步表格和 ASCII 趨勢圖。"""
+    all_records = database.get_all_workouts()
+    if not all_records:
+        print("\n  No records yet.")
+        return
+
+    exercise_map = {}
+    for r in all_records:
+        exercise_map[r["exercise"].lower()] = r["exercise"]
+    exercises = sorted(exercise_map.keys())
+
+    print("\n" + _hr())
+    print("  EXERCISE PROGRESS & CHART")
+    print(_hr())
+    print("\n  Available exercises:")
+    for i, key in enumerate(exercises, 1):
+        print(f"    {i}) {exercise_map[key]}")
+    print()
+
+    while True:
+        raw = input("  Choose an exercise number (0 to cancel): ").strip()
+        if raw == "0":
+            print("  Cancelled.")
+            return
+        try:
+            idx = int(raw)
+            if 1 <= idx <= len(exercises):
+                chosen_name = exercise_map[exercises[idx - 1]]
+                break
+            print(f"  [!] Please enter a number between 1 and {len(exercises)}.")
+        except ValueError:
+            print("  [!] Please enter a number.")
+
+    rows = database.get_exercise_progress(chosen_name)
+
+    if not rows:
+        print(f"\n  No records found for '{chosen_name}'.")
+        return
+
+    # ── Progress table ───────────────────────────────────────
+    print(f"\n  {chosen_name.upper()} — PROGRESS TABLE")
+    print(_hr())
+    print(f"  {'DATE':<14} {'WEIGHT (kg)':>12}")
+    print("  " + "-" * 28)
+    for date_str, weight in rows:
+        print(f"  {date_str:<14} {weight:>12.2f}")
+    print(_hr())
+
+    # ── ASCII chart (need at least 2 data points) ────────────
+    if len(rows) < 2:
+        print("  (Need at least 2 sessions to draw a chart.)")
+        return
+
+    dates   = [r[0] for r in rows]
+    weights = [r[1] for r in rows]
+
+    MAX_POINTS = 20
+    if len(dates) > MAX_POINTS:
+        dates   = dates[-MAX_POINTS:]
+        weights = weights[-MAX_POINTS:]
+        print(f"\n  (Showing last {MAX_POINTS} sessions in chart)")
+
+    _draw_ascii_chart(
+        title   = f"{chosen_name}  — weight trend (max per day, kg)",
+        dates   = dates,
+        weights = weights,
+    )
+    print(f"  Min: {min(weights):.2f} kg   Max: {max(weights):.2f} kg   "
+          f"Sessions plotted: {len(dates)}")
+    print(_hr())
+
+
 def action_suggestions(data: dict, data_file: str) -> None:
     """Generate and display progressive overload suggestions."""
     print("\n" + _hr())
@@ -531,6 +600,36 @@ def action_show_chart(data: dict, data_file: str) -> None:
     print(f"  Min: {min(weights):.2f} kg   Max: {max(weights):.2f} kg   "
           f"Sessions plotted: {len(dates)}")
     print(_hr())
+
+
+def action_analytics(data: dict, data_file: str) -> None:
+    """Analytics submenu — 統計分析子選單。"""
+    ANALYTICS_MENU = """
+  ── ANALYTICS ──────────────────────────────────
+  1) Volume analysis
+  2) PR (Personal Records)
+  3) Training frequency
+  4) Weekly training days
+  5) Exercise progress & chart
+  0) Back
+"""
+    ANALYTICS_ACTIONS = {
+        "1": action_volume,
+        "2": action_pr,
+        "3": action_frequency,
+        "4": action_weekly,
+        "5": action_exercise_detail,
+    }
+
+    while True:
+        print(ANALYTICS_MENU)
+        choice = input("  Your choice: ").strip()
+        if choice == "0":
+            return
+        if choice not in ANALYTICS_ACTIONS:
+            print("  [!] Invalid choice.")
+            continue
+        ANALYTICS_ACTIONS[choice](data, data_file)
 
 
 def _extract_suggested_weight(sugg: dict) -> Optional[float]:
@@ -1020,11 +1119,7 @@ ACTIONS: dict[str, callable] = {
     "2": action_show_last,
     "3": action_search,
     "4": action_suggestions,
-    "5": action_show_chart,
-    "6": action_volume,
-    "7": action_pr,
-    "8": action_frequency,
-    "w": action_weekly,
+    "5": action_analytics,
     "9": action_manage_templates,
     "0": action_save_exit,
 }
