@@ -313,6 +313,67 @@ def get_exercise_progress(exercise: str, db_path: str = DEFAULT_DB_FILE) -> list
     return rows
 
 
+def get_training_streak(db_path: str = DEFAULT_DB_FILE) -> dict:
+    """
+    計算目前連續訓練天數（current_streak）和歷史最長連續天數（longest_streak）。
+
+    回傳格式：
+      {"current_streak": 2, "longest_streak": 4}
+    """
+    conn = _get_connection(db_path)
+    cursor = conn.cursor()
+
+    # 取出所有不重複的訓練日期，由舊到新排序
+    # DISTINCT 確保同一天多筆只算一天
+    cursor.execute("""
+        SELECT DISTINCT date
+        FROM workouts
+        ORDER BY date
+    """)
+
+    # 把日期字串轉成 date 物件，方便計算兩天之間的差距
+    from datetime import date as date_type, timedelta
+    dates = [date_type.fromisoformat(row["date"]) for row in cursor.fetchall()]
+    conn.close()
+
+    # 沒有任何紀錄，直接回傳 0
+    if not dates:
+        return {"current_streak": 0, "longest_streak": 0}
+
+    # ── 計算 longest_streak ──────────────────────────────────
+    # 從第一筆開始，逐一比較相鄰兩天是否只差 1 天
+    longest = 1   # 至少有 1 天
+    current = 1   # 目前這段連續天數
+
+    for i in range(1, len(dates)):
+        if dates[i] - dates[i - 1] == timedelta(days=1):
+            # 相鄰兩天剛好差 1 天 → 連續，streak + 1
+            current += 1
+            longest = max(longest, current)
+        else:
+            # 中斷了，重設為 1
+            current = 1
+
+    # ── 計算 current_streak ──────────────────────────────────
+    # 從最後一筆往前數，看今天或昨天是否還在連續中
+    today = date_type.today()
+    last_date = dates[-1]
+
+    # 如果最後一次訓練不是今天也不是昨天，streak 已中斷
+    if (today - last_date).days > 1:
+        current_streak = 0
+    else:
+        # 從最後一筆往前找，只要相鄰差 1 天就繼續計算
+        current_streak = 1
+        for i in range(len(dates) - 1, 0, -1):
+            if dates[i] - dates[i - 1] == timedelta(days=1):
+                current_streak += 1
+            else:
+                break  # 遇到中斷就停
+
+    return {"current_streak": current_streak, "longest_streak": longest}
+
+
 # ---------------------------------------------------------------------------
 # 刪除
 # ---------------------------------------------------------------------------

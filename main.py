@@ -602,6 +602,18 @@ def action_show_chart(data: dict, data_file: str) -> None:
     print(_hr())
 
 
+def action_streak(data: dict, data_file: str) -> None:
+    """顯示目前連續訓練天數和歷史最長連續天數。"""
+    result = database.get_training_streak()
+
+    print("\n" + _hr())
+    print("  TRAINING STREAK")
+    print(_hr())
+    print(f"  Current streak : {result['current_streak']} day(s)")
+    print(f"  Longest streak : {result['longest_streak']} day(s)")
+    print(_hr())
+
+
 def action_analytics(data: dict, data_file: str) -> None:
     """Analytics submenu — 統計分析子選單。"""
     ANALYTICS_MENU = """
@@ -611,6 +623,7 @@ def action_analytics(data: dict, data_file: str) -> None:
   3) Training frequency
   4) Weekly training days
   5) Exercise progress & chart
+  6) Training streak
   0) Back
 """
     ANALYTICS_ACTIONS = {
@@ -619,6 +632,7 @@ def action_analytics(data: dict, data_file: str) -> None:
         "3": action_frequency,
         "4": action_weekly,
         "5": action_exercise_detail,
+        "6": action_streak,
     }
 
     while True:
